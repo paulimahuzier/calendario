@@ -107,19 +107,26 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div class="toast" id="toast"></div>
  
 <script>
-var URL='https://script.google.com/macros/s/AKfycbzf5ebBEDbC-ms1jfl5Y9wiY9pZwkqbfVUo5i4hcoE8hONm9-mxc5b2UXy9U6Ix--8GBg/exec';
+var SURL='https://script.google.com/macros/s/AKfycbz3MM_9gjX31kI81yahJmjB8It0qVPYgt0e-S_qCROgFe7d34PekefaL-LKDDt4woy0pw/exec';
 var COLORS=['#22c55e','#3b82f6','#f59e0b','#ef4444','#a855f7','#06b6d4','#f97316','#ec4899'];
 var cy=new Date().getFullYear(),cm=new Date().getMonth();
 var selDay=null,selColor=COLORS[0],showAll=false,evts=[];
  
 function api(params){
-  var qs=Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k]);}).join('&');
-  return fetch(URL+'?'+qs+'&t='+Date.now()).then(function(r){return r.text();});
+  var qs=Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
+  }).join('&');
+  return fetch(SURL+'?'+qs+'&t='+Date.now(),{redirect:'follow'}).then(function(r){return r.text();});
 }
+ 
+function wait(ms){return new Promise(function(r){setTimeout(r,ms);});}
  
 async function fetchEvts(){
   var txt=await api({action:'list'});
-  try{return JSON.parse(txt);}catch(e){return [];}
+  try{
+    var parsed=JSON.parse(txt);
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){return [];}
 }
  
 async function init(){
@@ -142,15 +149,15 @@ function updateSync(){
 }
  
 document.getElementById('btnSync').onclick=async function(){
-  this.textContent='↻ Actualizando...';
+  this.textContent='↻ Actualizando...';this.disabled=true;
   try{evts=await fetchEvts();renderCal();renderEvts();updateSync();toast('Actualizado ✓');}
   catch(e){toast('Error al actualizar');}
-  this.textContent='↻ Actualizar';
+  this.textContent='↻ Actualizar';this.disabled=false;
 };
  
 function ds(y,m,d){return y+'-'+('0'+(m+1)).slice(-2)+'-'+('0'+d).slice(-2);}
 function esc(s){return(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2400);}
  
 function renderCP(){
   var cp=document.getElementById('cpicker');cp.innerHTML='';
@@ -222,7 +229,9 @@ document.getElementById('bSave').onclick=async function(){
   if(!selDay){toast('Selecciona un día primero');return;}
   this.disabled=true;this.textContent='Guardando...';
   try{
-    await api({action:'add',id:''+Date.now(),date:selDay,name:name,title:title,note:note,color:selColor});
+    await api({action:'add',id:''+Date.now(),date:selDay,name:name,title:title,note:note||'',color:selColor});
+    // esperar que el sheet procese antes de leer
+    await wait(1500);
     evts=await fetchEvts();
     document.getElementById('iEvt').value='';
     document.getElementById('iNote').value='';
@@ -235,6 +244,7 @@ async function delEvt(id){
   if(!confirm('¿Eliminar esta actividad?'))return;
   try{
     await api({action:'delete',id:id});
+    await wait(1500);
     evts=await fetchEvts();renderCal();renderEvts();toast('Eliminada');
   }catch(e){toast('Error al eliminar.');}
 }
