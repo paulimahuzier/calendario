@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario del Grupo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green:#22c55e; --bg:#0f172a; --surface:#1e293b; --surface2:#334155;
+  --text:#f1f5f9; --muted:#94a3b8; --border:#2d3f55; --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+#app{max-width:460px;margin:0 auto;padding:14px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 0 6px;}
+.topbar h1{font-size:1.08rem;font-weight:700;}
+.icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:0.74rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.icon-btn:hover{border-color:var(--green);color:var(--green);}
+.spinning{animation:rot 1s linear infinite;}
+@keyframes rot{to{transform:rotate(360deg);}}
+.sync-time{font-size:0.64rem;color:var(--muted);text-align:center;margin-bottom:10px;font-family:'DM Mono',monospace;}
+
+.nav-month{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;border:1px solid var(--border);}
+.nav-month button{background:none;border:none;color:var(--green);font-size:1.3rem;cursor:pointer;width:30px;height:30px;border-radius:8px;transition:background .15s;}
+.nav-month button:hover{background:var(--surface2);}
+.nav-month h2{font-size:0.93rem;font-weight:600;}
+
+.cal-wrap{background:var(--surface);border-radius:var(--r);overflow:hidden;margin-bottom:10px;border:1px solid var(--border);}
+.day-names{display:grid;grid-template-columns:repeat(7,1fr);}
+.day-names span{text-align:center;padding:8px 2px;font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+.days{display:grid;grid-template-columns:repeat(7,1fr);}
+.day{min-height:56px;padding:5px;border-top:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.day:hover{background:var(--surface2);}
+.day.empty{cursor:default;pointer-events:none;}
+.day.today .dn{background:var(--green);color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.day.sel{background:rgba(34,197,94,.1);}
+.dn{font-size:0.74rem;font-weight:500;margin-bottom:3px;}
+.dots{display:flex;flex-wrap:wrap;gap:2px;}
+.dot{width:5px;height:5px;border-radius:50%;}
+
+.panel{background:var(--surface);border-radius:var(--r);padding:16px;border:1px solid var(--border);margin-bottom:10px;display:none;animation:sli .18s ease;}
+@keyframes sli{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+.panel.open{display:block;}
+.panel h3{font-size:0.84rem;color:var(--green);margin-bottom:12px;font-weight:600;}
+.panel label{font-size:0.68rem;font-weight:700;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em;}
+.panel input,.panel textarea{width:100%;padding:9px 11px;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;font-size:0.83rem;color:var(--text);font-family:'DM Sans',sans-serif;margin-bottom:10px;transition:border-color .2s;}
+.panel input:focus,.panel textarea:focus{border-color:var(--green);outline:none;}
+.panel textarea{resize:vertical;min-height:46px;}
+.cpicker{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.copt{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s;}
+.copt.sel{border-color:#fff;transform:scale(1.2);}
+.btn-save{background:var(--green);color:#000;border:none;border-radius:9px;padding:10px;font-size:0.86rem;font-weight:700;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif;transition:opacity .2s;}
+.btn-save:hover{opacity:.88;}
+.btn-save:disabled{opacity:.5;cursor:not-allowed;}
+
+.evts{background:var(--surface);border-radius:var(--r);padding:16px;border:1px solid var(--border);}
+.evts-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.evts-hdr h3{font-size:0.84rem;color:var(--green);font-weight:600;}
+.badge{background:rgba(34,197,94,.15);color:var(--green);font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;}
+.ecard{display:flex;align-items:flex-start;gap:10px;padding:10px;border-radius:10px;margin-bottom:7px;background:var(--bg);border-left:3px solid;transition:transform .1s;}
+.ecard:hover{transform:translateX(2px);}
+.einfo{flex:1;min-width:0;}
+.etitle{font-size:0.83rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.emeta{font-size:0.69rem;color:var(--muted);margin-top:2px;}
+.enote{font-size:0.71rem;color:var(--muted);margin-top:3px;font-style:italic;}
+.bdel{background:none;border:none;cursor:pointer;color:var(--surface2);font-size:0.88rem;padding:2px 4px;border-radius:4px;transition:color .2s;flex-shrink:0;}
+.bdel:hover{color:#f87171;}
+.empty-msg{text-align:center;font-size:0.8rem;color:var(--muted);padding:20px 0;}
+.ball-btn{display:block;width:100%;background:none;border:1px solid var(--border);color:var(--muted);border-radius:9px;padding:7px;font-size:0.76rem;cursor:pointer;margin-top:8px;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.ball-btn:hover{border-color:var(--green);color:var(--green);}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid var(--green);color:var(--green);padding:9px 20px;border-radius:30px;font-size:0.8rem;font-weight:600;transition:transform .3s;z-index:999;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.loader{text-align:center;padding:30px;color:var(--muted);font-size:0.85rem;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <h1>📅 Calendario del Grupo</h1>
+    <button class="icon-btn" id="btnSync">↻ Actualizar</button>
+  </div>
+  <div class="sync-time" id="syncTime"></div>
+
+  <div class="nav-month">
+    <button id="pb">&#8249;</button>
+    <h2 id="mTitle"></h2>
+    <button id="nb">&#8250;</button>
+  </div>
+
+  <div class="cal-wrap">
+    <div class="day-names">
+      <span>Do</span><span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sá</span>
+    </div>
+    <div class="days" id="grid"></div>
+  </div>
+
+  <div class="panel" id="panel">
+    <h3 id="pTitle">Nueva actividad</h3>
+    <label>Tu nombre</label>
+    <input id="iName" placeholder="Ej: María, Carlos..." maxlength="30">
+    <label>Actividad</label>
+    <input id="iEvt" placeholder="Ej: Reunión, Cumpleaños..." maxlength="60">
+    <label>Nota (opcional)</label>
+    <textarea id="iNote" placeholder="Detalles..."></textarea>
+    <label>Color</label>
+    <div class="cpicker" id="cpicker"></div>
+    <button class="btn-save" id="bSave">✓ Guardar</button>
+  </div>
+
+  <div class="evts">
+    <div class="evts-hdr">
+      <h3 id="eTitle">Actividades</h3>
+      <span class="badge" id="eBadge">0</span>
+    </div>
+    <div id="eList"><div class="loader">Cargando...</div></div>
+    <button class="ball-btn" id="bAll">Ver todas las actividades del mes</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var SCRIPT_URL='https://script.google.com/macros/s/AKfycbwSPZQW-s_tP3HaTRbXWG_s4g1TvCufVVfuQhFAYuppE5kbL7-sXhwbHwVz4BkIobOqdw/exec';
+var COLORS=['#22c55e','#3b82f6','#f59e0b','#ef4444','#a855f7','#06b6d4','#f97316','#ec4899'];
+var cy=new Date().getFullYear(), cm=new Date().getMonth();
+var selDay=null, selColor=COLORS[0], showAll=false, evts=[];
+
+// ── API ──
+async function fetchEvts(){
+  var r=await fetch(SCRIPT_URL+'?t='+Date.now());
+  if(!r.ok)throw new Error('fetch');
+  return await r.json();
+}
+async function postEvt(data){
+  await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(data)});
+}
+
+// ── Init ──
+async function init(){
+  try{evts=await fetchEvts();renderCal();renderEvts();updateSync();}
+  catch(e){document.getElementById('eList').innerHTML='<div class="empty-msg">Error al cargar. Intenta actualizar.</div>';}
+  setInterval(silentSync,30000);
+}
+async function silentSync(){
+  try{var f=await fetchEvts();if(JSON.stringify(f)!==JSON.stringify(evts)){evts=f;renderCal();renderEvts();toast('Calendario actualizado');}updateSync();}catch(e){}
+}
+function updateSync(){
+  var n=new Date();
+  document.getElementById('syncTime').textContent='Última actualización: '+n.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+}
+
+document.getElementById('btnSync').onclick=async function(){
+  this.querySelector||(this.textContent='↻ Actualizando...');
+  this.classList.add('spinning');
+  try{evts=await fetchEvts();renderCal();renderEvts();updateSync();toast('Actualizado ✓');}
+  catch(e){toast('Error al actualizar');}
+  this.classList.remove('spinning');
+  this.textContent='↻ Actualizar';
+};
+
+// ── Helpers ──
+function ds(y,m,d){return y+'-'+('0'+(m+1)).slice(-2)+'-'+('0'+d).slice(-2);}
+function esc(s){return(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
+
+// ── Color picker ──
+function renderCP(){
+  var cp=document.getElementById('cpicker');cp.innerHTML='';
+  COLORS.forEach(function(c){
+    var d=document.createElement('div');d.className='copt'+(c===selColor?' sel':'');
+    d.style.background=c;d.onclick=function(){selColor=c;renderCP();};cp.appendChild(d);
+  });
+}
+
+// ── Calendar ──
+function renderCal(){
+  var grid=document.getElementById('grid');grid.innerHTML='';
+  var months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('mTitle').textContent=months[cm]+' '+cy;
+  var today=new Date();
+  var fd=new Date(cy,cm,1).getDay();
+  var dim=new Date(cy,cm+1,0).getDate();
+  for(var i=0;i<fd;i++){var e=document.createElement('div');e.className='day empty';grid.appendChild(e);}
+  for(var d=1;d<=dim;d++){
+    var s=ds(cy,cm,d);
+    var de=evts.filter(function(e){return e.date===s;});
+    var div=document.createElement('div');div.className='day';
+    if(today.getFullYear()===cy&&today.getMonth()===cm&&today.getDate()===d)div.classList.add('today');
+    if(selDay===s)div.classList.add('sel');
+    var dn=document.createElement('div');dn.className='dn';dn.textContent=d;div.appendChild(dn);
+    var dots=document.createElement('div');dots.className='dots';
+    de.slice(0,6).forEach(function(ev){var dot=document.createElement('div');dot.className='dot';dot.style.background=ev.color||COLORS[0];dots.appendChild(dot);});
+    div.appendChild(dots);
+    (function(s2){div.onclick=function(){
+      selDay=s2;showAll=false;
+      document.getElementById('panel').classList.add('open');
+      var p=s2.split('-');
+      document.getElementById('pTitle').textContent='Actividad — '+p[2]+'/'+p[1]+'/'+p[0];
+      renderCal();renderEvts();
+    };})(s);
+    grid.appendChild(div);
+  }
+}
+
+// ── Events ──
+function renderEvts(){
+  var list=document.getElementById('eList');list.innerHTML='';
+  var pfx=cy+'-'+('0'+(cm+1)).slice(-2);
+  var toShow;
+  if(showAll||!selDay){
+    toShow=evts.filter(function(e){return e.date.indexOf(pfx)===0;}).sort(function(a,b){return a.date>b.date?1:-1;});
+    document.getElementById('eTitle').textContent='Actividades del mes';
+    document.getElementById('bAll').textContent=selDay?'Ver solo día seleccionado':'Ver todo el mes';
+  } else {
+    toShow=evts.filter(function(e){return e.date===selDay;});
+    var p=selDay.split('-');
+    document.getElementById('eTitle').textContent='Actividades '+p[2]+'/'+p[1]+'/'+p[0];
+    document.getElementById('bAll').textContent='Ver todo el mes';
+  }
+  document.getElementById('eBadge').textContent=toShow.length;
+  if(!toShow.length){list.innerHTML='<div class="empty-msg">Sin actividades 🌿</div>';return;}
+  toShow.forEach(function(ev){
+    var card=document.createElement('div');card.className='ecard';card.style.borderLeftColor=ev.color||COLORS[0];
+    var p=ev.date.split('-');
+    card.innerHTML='<div class="einfo"><div class="etitle">'+esc(ev.title)+'</div><div class="emeta">👤 '+esc(ev.name)+' · 📅 '+p[2]+'/'+p[1]+'/'+p[0]+'</div>'+(ev.note?'<div class="enote">'+esc(ev.note)+'</div>':'')+'</div><button class="bdel">✕</button>';
+    card.querySelector('.bdel').onclick=function(){delEvt(ev.id);};
+    list.appendChild(card);
+  });
+}
+
+// ── Save ──
+document.getElementById('bSave').onclick=async function(){
+  var name=document.getElementById('iName').value.trim();
+  var title=document.getElementById('iEvt').value.trim();
+  var note=document.getElementById('iNote').value.trim();
+  if(!name){toast('Ingresa tu nombre');return;}
+  if(!title){toast('Ingresa la actividad');return;}
+  if(!selDay){toast('Selecciona un día primero');return;}
+  this.disabled=true;this.textContent='Guardando...';
+  try{
+    await postEvt({action:'add',id:Date.now()+'',date:selDay,name:name,title:title,note:note,color:selColor});
+    evts=await fetchEvts();
+    document.getElementById('iEvt').value='';
+    document.getElementById('iNote').value='';
+    renderCal();renderEvts();toast('✓ Actividad guardada');
+  }catch(e){toast('Error al guardar. Intenta de nuevo.');}
+  this.disabled=false;this.textContent='✓ Guardar';
+};
+
+// ── Delete ──
+async function delEvt(id){
+  if(!confirm('¿Eliminar esta actividad?'))return;
+  try{
+    await postEvt({action:'delete',id:id});
+    evts=await fetchEvts();renderCal();renderEvts();toast('Actividad eliminada');
+  }catch(e){toast('Error al eliminar.');}
+}
+
+// ── Nav ──
+document.getElementById('pb').onclick=function(){cm--;if(cm<0){cm=11;cy--;}selDay=null;showAll=false;document.getElementById('panel').classList.remove('open');renderCal();renderEvts();};
+document.getElementById('nb').onclick=function(){cm++;if(cm>11){cm=0;cy++;}selDay=null;showAll=false;document.getElementById('panel').classList.remove('open');renderCal();renderEvts();};
+document.getElementById('bAll').onclick=function(){showAll=!showAll;renderEvts();};
+
+renderCP();init();
+</script>
+</body>
+</html>
